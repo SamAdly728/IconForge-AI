@@ -12,6 +12,19 @@ export default defineConfig(({ mode }) => {
       'process.env.API_KEY': JSON.stringify(env.API_KEY),
       // Polyfill for other process.env usage if necessary
       'process.env': {} 
+    },
+    build: {
+      chunkSizeWarningLimit: 1000, // Increase limit slightly
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Split heavy dependencies into separate chunks
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-firebase': ['firebase/app', 'firebase/auth'],
+            'vendor-utils': ['jszip', '@google/genai', 'lucide-react']
+          }
+        }
+      }
     }
   };
 });

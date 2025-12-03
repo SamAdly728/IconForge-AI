@@ -86,7 +86,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-800">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-800 flex flex-col">
       
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
@@ -162,7 +162,7 @@ const App: React.FC = () => {
           </button>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           {activeTab === 'generate' ? (
             <IconGenerator 
@@ -174,6 +174,25 @@ const App: React.FC = () => {
           )}
         </div>
       </main>
+      
+      <footer className="bg-white border-t border-slate-200 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+             <div className="bg-indigo-600 p-1.5 rounded-lg">
+                <LayoutGrid className="text-white h-4 w-4" />
+              </div>
+              <span className="font-semibold text-slate-800">IconForge AI</span>
+          </div>
+          <div className="text-slate-500 text-sm">
+            © {new Date().getFullYear()} IconForge AI. Powered by Gemini.
+          </div>
+          <div className="flex gap-6 text-sm text-slate-500">
+            <a href="#" className="hover:text-indigo-600 transition-colors">Privacy</a>
+            <a href="#" className="hover:text-indigo-600 transition-colors">Terms</a>
+            <a href="#" className="hover:text-indigo-600 transition-colors">Contact</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

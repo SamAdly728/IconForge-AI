@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserSessionPersistence } from 'firebase/auth';
-import { Wand2, AlertCircle, LayoutGrid } from 'lucide-react';
+import { LayoutGrid, PenTool, Download } from 'lucide-react';
 
-import { Button } from './components/Button';
-import { ResultDisplay } from './components/ResultDisplay';
-import { generateIconFromPrompt } from './services/geminiService';
-import { UserState, IconGenerationState } from './types';
+import { UserState } from './types';
+import { IconGenerator } from './components/IconGenerator';
+import { IconResizer } from './components/IconResizer';
 
 // Configuration retrieval from environment globals or defaults
 const APP_ID = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'icon-forge-dev';
 const FIREBASE_CONFIG = typeof window !== 'undefined' && window.__firebase_config ? JSON.parse(window.__firebase_config) : {};
 const INITIAL_AUTH_TOKEN = typeof window !== 'undefined' && window.__initial_auth_token ? window.__initial_auth_token : null;
+
+type Tab = 'generate' | 'resize';
 
 const App: React.FC = () => {
   // Auth State
@@ -21,13 +22,9 @@ const App: React.FC = () => {
     isReady: false,
   });
 
-  // App State
-  const [prompt, setPrompt] = useState('');
-  const [genState, setGenState] = useState<IconGenerationState>({
-    status: 'idle',
-    imageUrl: null,
-    error: null,
-  });
+  // Set default tab to 'resize' to make it the main page
+  const [activeTab, setActiveTab] = useState<Tab>('resize');
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
   // Initialize Firebase Auth
   useEffect(() => {
@@ -75,36 +72,9 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) return;
-    
-    setGenState({ status: 'loading', imageUrl: null, error: null });
-
-    try {
-      const base64Image = await generateIconFromPrompt(prompt);
-      setGenState({
-        status: 'success',
-        imageUrl: base64Image,
-        error: null
-      });
-    } catch (err: any) {
-      setGenState({
-        status: 'error',
-        imageUrl: null,
-        error: err.message || "Something went wrong during generation."
-      });
-    }
-  };
-
-  const handleDownload = () => {
-    if (genState.imageUrl) {
-      const link = document.createElement('a');
-      link.href = genState.imageUrl;
-      link.download = `icon-forge-${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+  const handleNavigateToExport = (imageUrl: string) => {
+    setGeneratedImage(imageUrl);
+    setActiveTab('resize');
   };
 
   if (!userState.isReady) {
@@ -122,15 +92,42 @@ const App: React.FC = () => {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('resize')}>
               <div className="bg-indigo-600 p-2 rounded-lg">
                 <LayoutGrid className="text-white h-5 w-5" />
               </div>
               <span className="font-bold text-xl tracking-tight text-slate-800">IconForge AI</span>
             </div>
+
+            {/* Tab Navigation */}
+            <div className="hidden md:flex items-center space-x-1 bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setActiveTab('resize')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'resize' 
+                    ? 'bg-white text-teal-600 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                }`}
+              >
+                <Download size={16} />
+                Export Assets
+              </button>
+              <button
+                onClick={() => setActiveTab('generate')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'generate' 
+                    ? 'bg-white text-indigo-600 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                }`}
+              >
+                <PenTool size={16} />
+                AI Generator
+              </button>
+            </div>
+
             <div className="flex items-center gap-4">
                {userState.uid && (
-                 <span className="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-1 rounded-md border border-slate-200">
+                 <span className="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-1 rounded-md border border-slate-200 hidden sm:block">
                    {userState.uid.slice(0, 8)}...
                  </span>
                )}
@@ -139,71 +136,42 @@ const App: React.FC = () => {
         </div>
       </nav>
 
+      {/* Mobile Tab Navigation */}
+      <div className="md:hidden border-b border-slate-200 bg-white px-4 py-2 flex gap-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('resize')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+              activeTab === 'resize' 
+                ? 'bg-teal-50 text-teal-700 border border-teal-100' 
+                : 'text-slate-600 border border-transparent'
+            }`}
+          >
+            <Download size={16} />
+            Export Assets
+          </button>
+          <button
+            onClick={() => setActiveTab('generate')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+              activeTab === 'generate' 
+                ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' 
+                : 'text-slate-600 border border-transparent'
+            }`}
+          >
+            <PenTool size={16} />
+            AI Generator
+          </button>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          
-          {/* Left Column: Input */}
-          <div className="lg:col-span-5 space-y-8">
-            <div className="space-y-4">
-              <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-                Generate stunning <span className="text-indigo-600">icons</span> in seconds.
-              </h1>
-              <p className="text-lg text-slate-600 leading-relaxed">
-                Describe your ideal app icon, and let our advanced AI model render it instantly. Perfect for MVPs, side projects, and production apps.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-              <div>
-                <label htmlFor="prompt" className="block text-sm font-medium text-slate-700 mb-2">
-                  What should your icon look like?
-                </label>
-                <textarea
-                  id="prompt"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none text-slate-800 placeholder:text-slate-400"
-                  placeholder="e.g. A stylized fox head, geometric style, orange and purple gradients, dark background..."
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  disabled={genState.status === 'loading'}
-                />
-              </div>
-
-              {genState.error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3 text-red-700">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm">{genState.error}</p>
-                </div>
-              )}
-
-              <Button 
-                onClick={handleGenerate} 
-                isLoading={genState.status === 'loading'}
-                disabled={!prompt.trim()}
-                className="w-full text-lg py-4"
-                icon={<Wand2 className="w-5 h-5" />}
-              >
-                Generate Icon
-              </Button>
-            </div>
-
-            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-sm text-indigo-800">
-              <p className="font-semibold mb-1">💡 Pro Tip</p>
-              <p>Be specific about style. Try adding keywords like "flat", "3D", "neon", "pastel", or "isometric" for better results.</p>
-            </div>
-          </div>
-
-          {/* Right Column: Display */}
-          <div className="lg:col-span-7 flex flex-col justify-center">
-             <ResultDisplay 
-               imageUrl={genState.imageUrl}
-               isLoading={genState.status === 'loading'}
-               onDownload={handleDownload}
-             />
-             <p className="text-center text-slate-400 text-xs mt-6">
-                App ID: {APP_ID} • AI Model: gemini-2.5-flash-image
-             </p>
-          </div>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {activeTab === 'generate' ? (
+            <IconGenerator 
+              appId={APP_ID} 
+              onNavigateToExport={handleNavigateToExport} 
+            />
+          ) : (
+            <IconResizer initialImage={generatedImage} />
+          )}
         </div>
       </main>
     </div>

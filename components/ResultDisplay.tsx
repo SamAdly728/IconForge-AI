@@ -1,14 +1,15 @@
 import React from 'react';
-import { Download, Share2, Sparkles } from 'lucide-react';
+import { Download, Share2, Sparkles, Package } from 'lucide-react';
 import { Button } from './Button';
 
 interface ResultDisplayProps {
   imageUrl: string | null;
   isLoading: boolean;
   onDownload: () => void;
+  onResize?: () => void;
 }
 
-export const ResultDisplay: React.FC<ResultDisplayProps> = ({ imageUrl, isLoading, onDownload }) => {
+export const ResultDisplay: React.FC<ResultDisplayProps> = ({ imageUrl, isLoading, onDownload, onResize }) => {
   return (
     <div className="w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center min-h-[350px]">
       {isLoading ? (
@@ -30,13 +31,15 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ imageUrl, isLoadin
             />
           </div>
           
-          <div className="mt-8 flex gap-3 w-full max-w-xs">
-            <Button variant="outline" className="flex-1" icon={<Download size={16} />} onClick={onDownload}>
+          <div className="mt-8 grid grid-cols-2 gap-3 w-full max-w-sm">
+            <Button variant="outline" icon={<Download size={16} />} onClick={onDownload}>
               Download
             </Button>
-            <Button variant="outline" className="flex-1" icon={<Share2 size={16} />}>
-              Share
-            </Button>
+            {onResize && (
+              <Button variant="secondary" icon={<Package size={16} />} onClick={onResize}>
+                Resize & ZIP
+              </Button>
+            )}
           </div>
         </div>
       ) : (
